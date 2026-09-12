@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Victoria Nix Lopez - XV Años</title>
+<style>
+  :root{
+    --olive-dark:#3f4a30;
+    --olive:#5b7451;
+    --olive-light:#7c8a5a;
+    --gold:#c9a860;
+    --green-soft:#6fae6a;
+    --cream:#f8f6ef;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--cream); }
+  body{ display:flex; justify-content:center; font-family:'Georgia','Times New Roman',serif; }
+
+  /* Contenedor tipo "celular": crece con la ventana hasta un tope, en vez de quedar fijo y chico */
+  .stage{
+    width:min(94vw, 720px);   /* <- sube el 720px si lo quieres aún más grande en monitores */
+    position:relative;
+    background:var(--cream);
+  }
+
+  .view{ position:relative; width:100%; }
+  .view img{ display:block; width:100%; height:auto; }
+
+  #view2{ display:none; }
+  #view2.visible{ display:block; }
+
+  /* ---------- ZONA DE CLICK SOBRE EL SOBRE ---------- */
+  /* Estos % ya están medidos sobre tu imagen real (1.png). Si algún día
+     cambias esa imagen por otra con el sobre en otro lugar, reajusta aquí. */
+  #clickZone{
+    position:absolute;
+    left:16.5%;
+    top:35.3%;
+    width:68%;
+    height:29.7%;
+    cursor:pointer;
+    background:transparent;
+    border:none;
+    padding:0;
+    /* quita el comentario de abajo mientras ajustas la posición, para ver el área */
+    /* outline: 2px dashed red; */
+  }
+
+  /* ---------- NOMBRE DEL INVITADO (personalizado por link) ---------- */
+  /* Cae justo en el espacio en blanco entre "PARA:" y "ADULTOS/NIÑOS". */
+  #guestNameWrap{
+    position:absolute;
+    left:8%;
+    top:85.3%;
+    width:84%;
+    text-align:center;
+  }
+  #guestNameWrap span{
+    font-size:clamp(16px, 4.6vw, 26px);
+    color:var(--olive-dark);
+    letter-spacing:0.5px;
+  }
+
+  /* ---------- ADULTOS / NIÑOS (personalizado por link) ---------- */
+  /* Repintan la cajita con el mismo color que ya tienes en 1.png, para
+     que el número real tape al que quedó fijo en la imagen. */
+  #adultosBox, #ninosBox{
+    position:absolute;
+    top:90.5%;
+    height:2.1%;
+    background:rgb(193,206,195);
+    border-radius:1.6vw;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Georgia','Times New Roman',serif;
+    font-size:clamp(13px, 3.4vw, 19px);
+    color:#2c2c22;
+  }
+  #adultosBox{ left:35.9%; width:10.9%; }
+  #ninosBox{ left:53.9%; width:10.4%; }
+
+  /* ---------- CUENTA REGRESIVA (superpuesta sobre imagen2) ---------- */
+  /* También en % sobre la imagen — muévela con top/left si tu diseño cambia. */
+  #countdown-wrap{
+    position:absolute;
+    left:8%;
+    top:83.6%;
+    width:84%;
+    text-align:center;
+  }
+  #countdown-wrap .cd-title{
+    font-style:italic;
+    color:var(--olive);
+    font-size:clamp(16px, 3.6vw, 22px);
+    font-weight:200;
+    margin-bottom:14px;
+  }
+  /* Cada número va en columna junto con SU propia etiqueta,
+     así quedan siempre alineados sin importar el ancho de cada número. */
+  #countdown-wrap .cd-numbers{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    gap:6px;
+  }
+  #countdown-wrap .unit{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-width:0;
+  }
+  #countdown-wrap .num{
+    font-size:clamp(32px, 8.2vw, 58px);
+    font-family:Arial, Helvetica, sans-serif;
+    font-weight:300;
+    line-height:1;
+    color:var(--olive-dark);
+  }
+  #countdown-wrap .num.seconds{
+    color:var(--green-soft);
+  }
+  #countdown-wrap .sep{
+    font-size:clamp(20px, 6vw, 34px);
+    color:var(--olive-light);
+    line-height:1.15; /* para que el ":" quede a la altura óptica de los números */
+  }
+  #countdown-wrap .lbl{
+    margin-top:6px;
+    font-size:clamp(9px, 2.3vw, 12px);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    white-space:nowrap;
+    color:var(--olive);
+  }
+  #countdown-wrap .lbl-gold{ color:var(--gold); }
+  #countdown-wrap .lbl-green{ color:var(--green-soft); }
+
+  /* ---------- LUCIÉRNAGAS (sobre + escena del castillo) ---------- */
+  /* Cada una es un SVG con forma de insecto (cuerpo + alas + antenas) más un halo de luz.
+     El halo titila (brillo/tamaño); el cuerpo se ve siempre y solo flota un poco. */
+  .firefly-pos{
+    position:absolute;
+    transform:translate(-50%, -50%);
+    pointer-events:none;
+  }
+  .firefly{
+    width:22px;
+    height:22px;
+    overflow:visible;
+    animation-name:firefly-float;
+    animation-timing-function:ease-in-out;
+    animation-iteration-count:infinite;
+  }
+  .firefly .glow{
+    transform-origin:50% 50%;
+    mix-blend-mode:screen;
+    animation-name:firefly-twinkle;
+    animation-timing-function:ease-in-out;
+    animation-iteration-count:infinite;
+  }
+  @keyframes firefly-float{
+    0%, 100% { transform:translate(0,0); }
+    25%      { transform:translate(3px,-4px); }
+    50%      { transform:translate(-2px,-7px); }
+    75%      { transform:translate(-4px,-2px); }
+  }
+  @keyframes firefly-twinkle{
+    0%, 100% { opacity:0.45; transform:scale(0.8); }
+    50%      { opacity:1;    transform:scale(1.3); }
+  }
+
+  /* ---------- BOTÓN DE MÚSICA ---------- */
+  #musicToggle{
+    position:absolute;
+    bottom:16px;
+    right:16px;
+    border:1px solid var(--olive);
+    background:rgba(248,246,239,0.9);
+    color:var(--olive-dark);
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:12px;
+    cursor:pointer;
+  }
+
+  /* ---------- BOTÓN CONFIRMAR ASISTENCIA ---------- */
+  /* Medido sobre tu imagen real (2.png), encima del botón "Confirmar" ya dibujado. */
+  #confirmBtn{
+    position:absolute;
+    left:32.9%;
+    top:73.7%;
+    width:32.5%;
+    height:1.1%;
+    cursor:pointer;
+    background:transparent;
+    border:none;
+    padding:0;
+    /* outline: 2px dashed red; */
+  }
+
+  /* ---------- BOTÓN VER UBICACIÓN ---------- */
+  /* Medido sobre tu imagen real (2.png), encima del botón "Ver ubicación" ya dibujado. */
+  #locationBtn{
+    position:absolute;
+    left:31.6%;
+    top:44.5%;
+    width:37.9%;
+    height:1.1%;
+    display:block;
+    /* outline: 2px dashed red; */
+  }
+</style>
+</head>
+<body>
+
+<!-- Definición compartida del degradado del halo de las luciérnagas (no se ve, solo la usan los SVG de abajo) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="fireflyGlow" cx="50%" cy="55%" r="55%">
+      <stop offset="0%" stop-color="#fffef0" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#ffe89a" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffe89a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<div class="stage">
+
+  <!-- VISTA 1: tu imagen exportada de Canva (sobre cerrado) -->
+  <div class="view" id="view1">
+    <img src="1.png" alt="Invitación cerrada">
+    <button id="clickZone" aria-label="Abrir invitación"></button>
+    <div id="guestNameWrap"><span id="guestName">Cargando…</span></div>
+    <div id="adultosBox"></div>
+    <div id="ninosBox"></div>
+
+    <!-- Luciérnagas del sobre -->
+    <div class="firefly-pos" style="left:76.4%; top:37.6%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:0.2s; animation-duration:4s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:0.2s; animation-duration:4s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="firefly-pos" style="left:25.8%; top:60.3%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:1.6s; animation-duration:4.6s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:1.6s; animation-duration:4.6s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- VISTA 2: tu imagen exportada de Canva (invitación completa) -->
+  <div class="view" id="view2">
+    <img src="2.png" alt="Invitación completa">
+
+    <!-- Luciérnagas de la escena del castillo (ajusta left/top si no caen exactas en tu imagen) -->
+    <div class="firefly-pos" style="left:43.3%; top:95.8%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:0s; animation-duration:4.2s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:0s; animation-duration:4.2s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="firefly-pos" style="left:67.3%; top:94.4%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:0.7s; animation-duration:3.6s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:0.7s; animation-duration:3.6s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="firefly-pos" style="left:7.5%; top:98.1%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:1.4s; animation-duration:4.8s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:1.4s; animation-duration:4.8s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="firefly-pos" style="left:87%; top:98.7%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:2.1s; animation-duration:3.9s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:2.1s; animation-duration:3.9s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="firefly-pos" style="left:77%; top:94.8%;">
+      <svg class="firefly" viewBox="0 0 40 40" style="animation-delay:0.3s; animation-duration:4.4s;">
+        <circle class="glow" cx="20" cy="22" r="17" fill="url(#fireflyGlow)" style="animation-delay:0.3s; animation-duration:4.4s;"/>
+        <path d="M20 20 C13 14,7 15,8 20 C9 23,15 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <path d="M20 20 C27 14,33 15,32 20 C31 23,25 22,20 20 Z" fill="#fffdf2" opacity="0.9"/>
+        <ellipse cx="20" cy="22" rx="3" ry="4.6" fill="#fffdf2"/>
+        <line x1="20" y1="18" x2="17.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+        <line x1="20" y1="18" x2="22.5" y2="14" stroke="#fffdf2" stroke-width="0.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- Botón real: confirma asistencia por WhatsApp, con el nombre del invitado ya incluido -->
+    <button id="confirmBtn" aria-label="Confirmar asistencia"></button>
+
+    <!-- Botón real: abre la ubicación en Google Maps -->
+    <a id="locationBtn" aria-label="Ver ubicación" href="https://www.google.com/maps/search/?api=1&query=14.5498275,-90.5642634" target="_blank" rel="noopener"></a>
+
+    <div id="countdown-wrap">
+      <div class="cd-title">Cuenta regresiva</div>
+      <div class="cd-numbers">
+        <div class="unit">
+          <span class="num" id="cd-d">00</span>
+          <span class="lbl">Días</span>
+        </div>
+        <span class="sep">:</span>
+        <div class="unit">
+          <span class="num" id="cd-h">00</span>
+          <span class="lbl">Horas</span>
+        </div>
+        <span class="sep">:</span>
+        <div class="unit">
+          <span class="num" id="cd-m">00</span>
+          <span class="lbl lbl-gold">Minutos</span>
+        </div>
+        <span class="sep">:</span>
+        <div class="unit">
+          <span class="num seconds" id="cd-s">00</span>
+          <span class="lbl lbl-green">Segundos</span>
+        </div>
+      </div>
+    </div>
+
+    <button id="musicToggle">🔊 Pausar música</button>
+  </div>
+
+  <audio id="bgAudio" loop>
+    <!-- Tu archivo de música real -->
+    <source src="Ma-Belle-Evangeline.mp3" type="audio/mpeg">
+  </audio>
+
+</div>
+
+<script>
+  /* ======= FECHA DEL EVENTO (ajusta esto) ======= */
+  const FECHA_EVENTO = new Date("2026-10-25T18:00:00-06:00");
+  /* =============================================== */
+
+  /* ======= INVITADOS =======
+     Una entrada por cada fila de tu Excel (generado desde tu lista real).
+     La "clave" (ej. "vargas-lopez") es lo que va después de "?g=" en el
+     link que le mandas a cada quien: tusitio.com/index.html?g=vargas-lopez
+  ============================ */
+  const INVITADOS = {
+    "vargas-lopez": { nombre: "Vargas Lopez", adultos: 2, ninos: 1 },
+    "mejia-cifuentes": { nombre: "Mejia Cifuentes", adultos: 3, ninos: 0 },
+    "lopez-donis": { nombre: "Lopez Donis", adultos: 3, ninos: 1 },
+    "paiz-mejia": { nombre: "Paiz Mejia", adultos: 2, ninos: 0 },
+    "lopez-cifuentes": { nombre: "Lopez Cifuentes", adultos: 3, ninos: 0 },
+    "jose-zabaleta-y-familia": { nombre: "Jose Zabaleta y Familia", adultos: 2, ninos: 1 },
+    "lopez-mejia": { nombre: "Lopez Mejia", adultos: 6, ninos: 0 },
+    "victoria-cifuentes-y-familia": { nombre: "Victoria Cifuentes y Familia", adultos: 4, ninos: 0 },
+    "ismael-lopez": { nombre: "Ismael Lopez", adultos: 1, ninos: 0 },
+    "samuel-lopez-y-familia": { nombre: "Samuel Lopez y Familia", adultos: 2, ninos: 0 },
+    "nix-sic": { nombre: "Nix Sic", adultos: 5, ninos: 0 },
+    "esly-nix-y-familia": { nombre: "Esly Nix y Familia", adultos: 2, ninos: 2 },
+    "normagda-y-familia": { nombre: "Normagda y Familia", adultos: 2, ninos: 1 },
+    "genar-nix-y-familia": { nombre: "Genar Nix y Familia", adultos: 2, ninos: 1 },
+    "ana-cipriano": { nombre: "Ana Cipriano", adultos: 1, ninos: 0 },
+    "eunice-y-familia": { nombre: "Eunice y Familia", adultos: 3, ninos: 0 },
+    "eleeser-y-familia": { nombre: "Eleeser y Familia", adultos: 4, ninos: 0 },
+    "abdi-y-familia": { nombre: "Abdi y Familia", adultos: 3, ninos: 0 },
+    "lorena-avila-y-familia": { nombre: "Lorena Avila y Familia", adultos: 4, ninos: 1 },
+    "elsa-avila-y-familia": { nombre: "Elsa Avila y Familia", adultos: 4, ninos: 1 },
+    "nix-lux": { nombre: "Nix Lux", adultos: 4, ninos: 0 },
+    "tomas-nix-y-familia": { nombre: "Tomas Nix y Familia", adultos: 3, ninos: 0 },
+    "elmer-guarcas-y-familia": { nombre: "Elmer Guarcas y Familia", adultos: 2, ninos: 2 },
+    "gloria-nix": { nombre: "Gloria Nix", adultos: 3, ninos: 0 },
+    "jesus-cipriano": { nombre: "Jesus Cipriano", adultos: 1, ninos: 0 },
+    "walter-cipriano-y-familia": { nombre: "Walter Cipriano y Familia", adultos: 2, ninos: 1 },
+    "familia-angel-osorio": { nombre: "Familia Angel Osorio", adultos: 2, ninos: 1 },
+    "jenny-boch-y-familia": { nombre: "Jenny Boch y Familia", adultos: 2, ninos: 2 },
+    "familia-chavez-salazar": { nombre: "Familia Chavez Salazar", adultos: 4, ninos: 0 },
+    "janeth-fernandez-y-familia": { nombre: "Janeth Fernandez y Familia", adultos: 1, ninos: 1 },
+    "familia-boch-barreno": { nombre: "Familia Boch Barreno", adultos: 2, ninos: 1 },
+    "familia-chavez-corado": { nombre: "Familia Chavez Corado", adultos: 2, ninos: 0 },
+    "marelin-chavez-y-familia": { nombre: "Marelin Chavez y Familia", adultos: 1, ninos: 2 },
+    "familia-caal-roblero": { nombre: "Familia Caal Roblero", adultos: 3, ninos: 2 },
+    "alejandra-y-olga": { nombre: "Alejandra y Olga", adultos: 2, ninos: 0 },
+    "selvin-barreno-y-familia": { nombre: "Selvin Barreno y Familia", adultos: 3, ninos: 1 },
+    "familia-barrreno-sum": { nombre: "Familia Barrreno Sum", adultos: 2, ninos: 1 },
+    "maria-luisa-y-familia": { nombre: "Maria Luisa y Familia", adultos: 2, ninos: 1 },
+    "familia-chavez-romero": { nombre: "Familia Chavez Romero", adultos: 2, ninos: 0 },
+    "robin-barreno-y-familia": { nombre: "Robin Barreno y Familia", adultos: 2, ninos: 0 },
+    "familia-chavez-albeno": { nombre: "Familia Chavez Albeño", adultos: 3, ninos: 1 },
+    "familia-baten-lopez": { nombre: "Familia Baten Lopez", adultos: 2, ninos: 0 },
+    "justina": { nombre: "Justina", adultos: 1, ninos: 0 },
+    "evelin-barreno-y-familia": { nombre: "Evelin Barreno y Familia", adultos: 2, ninos: 0 },
+    "angelica-barreno-y-familia": { nombre: "Angelica Barreno y Familia", adultos: 2, ninos: 0 },
+    "flory-y-familia": { nombre: "Flory y Familia", adultos: 2, ninos: 0 },
+    "irma-y-familia": { nombre: "Irma y Familia", adultos: 2, ninos: 0 },
+    "rosa": { nombre: "Rosa", adultos: 1, ninos: 0 },
+    "yoly": { nombre: "Yoly", adultos: 1, ninos: 0 },
+    "catalina-y-familia": { nombre: "Catalina y Familia", adultos: 4, ninos: 1 },
+    "reyna-y-familia": { nombre: "Reyna y Familia", adultos: 3, ninos: 0 },
+    "alis": { nombre: "Alis", adultos: 1, ninos: 0 },
+    "esvin-y-novia": { nombre: "Esvin y Novia", adultos: 2, ninos: 0 },
+    "david": { nombre: "David", adultos: 2, ninos: 0 },
+    "lucia-escobar-y-familia": { nombre: "Lucia Escobar y Familia", adultos: 2, ninos: 0 },
+    "jimena-polanco": { nombre: "Jimena Polanco", adultos: 2, ninos: 0 },
+    "doroti-mayte-y-familia": { nombre: "Doroti Mayte y Familia", adultos: 2, ninos: 0 },
+    "luzdari-y-familia": { nombre: "Luzdari y Familia", adultos: 2, ninos: 0 },
+    "adriana-y-familia": { nombre: "Adriana y Familia", adultos: 2, ninos: 0 },
+    "yadira-y-familia": { nombre: "Yadira y Familia", adultos: 2, ninos: 0 },
+    "emily-y-familia": { nombre: "Emily y Familia", adultos: 2, ninos: 0 },
+    "briggit-y-familia": { nombre: "Briggit y Familia", adultos: 2, ninos: 0 },
+    "sandra-y-familia": { nombre: "Sandra y Familia", adultos: 4, ninos: 0 },
+    "noe-y-pareja": { nombre: "Noe y Pareja", adultos: 2, ninos: 0 },
+    "cindy-garrido-y-familia": { nombre: "Cindy Garrido y Familia", adultos: 2, ninos: 1 },
+    "sheny-ambrocio-y-familia": { nombre: "Sheny Ambrocio y Familia", adultos: 2, ninos: 0 },
+    "mayte-y-familia": { nombre: "Mayte y Familia", adultos: 4, ninos: 0 },
+    "delmy-y-familia": { nombre: "Delmy y Familia", adultos: 3, ninos: 0 },
+    "dora-y-familia": { nombre: "Dora y Familia", adultos: 2, ninos: 0 },
+    "karla-bautista": { nombre: "Karla Bautista", adultos: 1, ninos: 0 },
+    "belgica-valenzuela-y-familia": { nombre: "Belgica Valenzuela y Familia", adultos: 3, ninos: 0 },
+    "jaquelin-y-familia": { nombre: "Jaquelin y Familia", adultos: 3, ninos: 0 },
+    "katia-y-familia": { nombre: "Katia y Familia", adultos: 2, ninos: 0 },
+    "aurora": { nombre: "Aurora", adultos: 1, ninos: 0 },
+    "hilda": { nombre: "Hilda", adultos: 1, ninos: 0 },
+    "maria-jose": { nombre: "Maria Jose", adultos: 1, ninos: 0 },
+    "lemys-vargas-y-familia": { nombre: "Lemys Vargas y Familia", adultos: 2, ninos: 0 },
+    "familia-vargas-garcia": { nombre: "Familia Vargas Garcia", adultos: 2, ninos: 0 },
+    "cawlin-vargas-y-familia": { nombre: "Cawlin Vargas y Familia", adultos: 2, ninos: 0 },
+    "leydi-vargas-y-familia": { nombre: "Leydi Vargas y Familia", adultos: 5, ninos: 1 },
+    "joshua-y-familia": { nombre: "Joshua y Familia", adultos: 2, ninos: 0 },
+    "samantha-olivares-y-familia": { nombre: "Samantha Olivares y Familia", adultos: 2, ninos: 0 },
+    "jairo-donis-y-familia": { nombre: "Jairo Donis y Familia", adultos: 3, ninos: 1 },
+    "ana-cetino": { nombre: "Ana Cetino", adultos: 5, ninos: 0 },
+  };
+  /* =========================== */
+
+  /* ======= WHATSAPP PARA CONFIRMACIONES =======
+     Pon aquí el número que recibe los "Confirmar" (código de país + número, sin "+" ni espacios) */
+  const NUMERO_WHATSAPP = "50230648880";
+  /* ============================================== */
+
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("g");
+  const invitado = INVITADOS[slug] || { nombre: "Invitado especial", adultos: "-", ninos: "-" };
+  const nombreInvitado = invitado.nombre;
+  document.getElementById("guestName").textContent = invitado.nombre;
+  document.getElementById("adultosBox").textContent = invitado.adultos;
+  document.getElementById("ninosBox").textContent = invitado.ninos;
+
+  const view1 = document.getElementById("view1");
+  const view2 = document.getElementById("view2");
+  const audio = document.getElementById("bgAudio");
+  let cdInterval;
+
+  document.getElementById("clickZone").addEventListener("click", () => {
+    view1.style.display = "none";
+    view2.classList.add("visible");
+    audio.play().catch(() => {});
+    if (!cdInterval) startCountdown();
+  });
+
+  document.getElementById("musicToggle").addEventListener("click", (e) => {
+    if (audio.paused) { audio.play(); e.target.textContent = "🔊 Pausar música"; }
+    else { audio.pause(); e.target.textContent = "🔇 Reanudar música"; }
+  });
+
+  document.getElementById("confirmBtn").addEventListener("click", () => {
+    const mensaje = encodeURIComponent(
+      `¡Hola! Confirmo mi asistencia a Mis 15 de Victoria. Invitado: ${invitado.nombre} — ${invitado.adultos} adulto(s), ${invitado.ninos} niño(s)`
+    );
+    window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`, "_blank");
+  });
+
+  function startCountdown(){
+    cdInterval = setInterval(() => {
+      const diff = FECHA_EVENTO - new Date();
+      if (diff <= 0){ clearInterval(cdInterval); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      document.getElementById("cd-d").textContent = String(d).padStart(2,"0");
+      document.getElementById("cd-h").textContent = String(h).padStart(2,"0");
+      document.getElementById("cd-m").textContent = String(m).padStart(2,"0");
+      document.getElementById("cd-s").textContent = String(s).padStart(2,"0");
+    }, 1000);
+  }
+</script>
+
+</body>
+</html>
